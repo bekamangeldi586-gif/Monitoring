@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏙️ Smart City Monitoring - Панель управления</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #5e72e4;
+            --success-color: #2dce89;
+            --danger-color: #f5365c;
+            --warning-color: #fb6340;
+            --info-color: #11cdef;
+            --dark-color: #32325d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+            font-size: 1.3rem;
+        }
+
+        .container-main {
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 15px 15px 0 0;
+            padding: 20px;
+        }
+
+        .stat-box {
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            font-weight: 600;
+            transition: transform 0.3s;
+        }
+
+        .stat-box:hover {
+            transform: scale(1.05);
+        }
+
+        .stat-box h5 {
+            font-size: 2.5rem;
+            margin: 10px 0;
+        }
+
+        .stat-box p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .bg-stat-primary {
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+        }
+
+        .bg-stat-success {
+            background: linear-gradient(135deg, var(--success-color), #21ba78);
+        }
+
+        .bg-stat-danger {
+            background: linear-gradient(135deg, var(--danger-color), #ff4757);
+        }
+
+        .bg-stat-warning {
+            background: linear-gradient(135deg, var(--warning-color), #ff7675);
+        }
+
+        .sensor-card {
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .sensor-card:hover {
+            border-left-color: var(--success-color);
+            background: #f8f9fa;
+        }
+
+        .sensor-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .sensor-status.active {
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        .sensor-status.inactive {
+            background: #999;
+        }
+
+        .sensor-status.error {
+            background: var(--danger-color);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.3; }
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(94, 114, 228, 0.4);
+        }
+
+        .alert-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .alert-badge.new {
+            background: #fee;
+            color: var(--danger-color);
+        }
+
+        .alert-badge.acknowledged {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .alert-badge.resolved {
+            background: #c8e6c9;
+            color: var(--success-color);
+        }
+
+        .spinner-custom {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(94, 114, 228, 0.1);
+            border-right-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .table-custom {
+            font-size: 0.9rem;
+        }
+
+        .table-custom thead {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .table-custom tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(94, 114, 228, 0.25);
+        }
+
+        .label-required::after {
+            content: ' *';
+            color: var(--danger-color);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            margin-top: 30px;
+        }
+
+        .loading-spinner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+
+        .loading-spinner.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .tab-content {
+            border-radius: 0 0 15px 15px;
+            background: white;
+            padding: 20px;
+        }
+
+        .nav-tabs {
+            border: none;
+            position: relative;
+        }
+
+        .nav-tabs .nav-link {
+            color: #666;
+            border: none;
+            border-bottom: 3px solid transparent;
+            border-radius: 0;
+            padding: 15px 20px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: white;
+            background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-building"></i> Smart City Monitoring
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="fas fa-chart-line"></i> Приборная панель</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/" target="_blank"><i class="fas fa-cog"></i> Админ-панель</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Обновить</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container-fluid container-main">
+        <!-- Statistics Row -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-box bg-stat-primary">
+                    <p>Всего датчиков</p>
+                    <h5 id="total-sensors">0</h5>
+                    <p><span id="active-sensors">0</span> активных</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-box bg-stat-success">
+                    <p>Показаний</p>
+                    <h5 id="total-readings">0</h5>
+                    <p><span id="alert-readings">0</span> с тревогой</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="stat-box bg-stat-warning">
+                    <p>Тревоги</p>
+                    <h5 id="total-alerts">0</h5>
+                    <p><span id="new-alerts">0</span> новых</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Sensors Section -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-microchip"></i> Датчики
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <button class="btn btn-primary btn-sm" onclick="showAddSensorModal()">
+                                <i class="fas fa-plus"></i> Добавить датчик
+                            </button>
+                            <button class="btn btn-warning btn-sm" onclick="generateBulkReadings()">
+                                <i class="fas fa-sync-alt"></i> Обновить все показания
+                            </button>
+                        </div>
+                        <div id="sensors-container" class="sensors-container">
+                            <div class="text-center">
+                                <div class="spinner-custom mx-auto"></div>
+                                <p class="mt-2">Загрузка датчиков...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alerts Section -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bell"></i> Последние тревоги
+                        </h5>
+                    </div>
+                    <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                        <div id="alerts-container">
+                            <div class="text-center">
+                                <div class="spinner-custom mx-auto"></div>
+                                <p class="mt-2">Загрузка тревог...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="overlay" id="overlay"></div>
+    <div class="loading-spinner" id="loading-spinner">
+        <div class="spinner-custom"></div>
+        <span>Обработка...</span>
+    </div>
+
+    <!-- Add Sensor Modal -->
+    <div class="modal fade" id="addSensorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus"></i> Добавить новый датчик</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addSensorForm">
+                        <div class="mb-3">
+                            <label class="form-label label-required">ID датчика</label>
+                            <input type="text" class="form-control" id="sensorId" placeholder="TEMP_01" required>
+                            <small class="text-muted">Формат: TYPE_XX (TEMP_01, AIR_02, TRAFFIC_03)</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label label-required">Название</label>
+                            <input type="text" class="form-control" id="sensorName" placeholder="Датчик температуры #1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label label-required">Тип датчика</label>
+                            <select class="form-select" id="sensorType" required>
+                                <option value="">Выберите тип...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label label-required">Местоположение</label>
+                            <input type="text" class="form-control" id="sensorLocation" placeholder="ул. Центральная, 1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label label-required">Критический порог</label>
+                            <input type="number" class="form-control" id="sensorThreshold" step="0.1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Широта</label>
+                            <input type="number" class="form-control" id="sensorLatitude" step="0.0001" min="-90" max="90">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Долгота</label>
+                            <input type="number" class="form-control" id="sensorLongitude" step="0.0001" min="-180" max="180">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" onclick="addSensor()">
+                        <i class="fas fa-check"></i> Добавить
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simulation Modal -->
+    <div class="modal fade" id="simulationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-robot"></i> Управление имитацией</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="simulation-items" class="simulation-items">
+                        <p class="text-center">Загрузка датчиков...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        const API_BASE = '/api/api';
+        let readingsChart = null;
+        let statisticsChart = null;
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard initialized');
+            loadData();
+            setInterval(loadData, 10000); // Обновлять каждые 10 секунд
+        });
+
+        // Загрузить все данные
+        async function loadData() {
+            try {
+                await Promise.all([
+                    loadStats(),
+                    loadSensors(),
+                    loadAlerts()
+                ]);
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        // Загрузить статистику
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/dashboard/stats/`);
+                const data = await response.json();
+
+                document.getElementById('total-sensors').textContent = data.sensors.total;
+                document.getElementById('active-sensors').textContent = data.sensors.active;
+                document.getElementById('total-readings').textContent = data.readings.total;
+                document.getElementById('alert-readings').textContent = data.readings.alerts;
+                document.getElementById('total-alerts').textContent = data.alerts.total;
+                document.getElementById('new-alerts').textContent = data.alerts.new;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Загрузить датчики
+        async function loadSensors() {
+            try {
+                const response = await fetch(`${API_BASE}/sensors/?limit=100`);
+                const data = await response.json();
+
+                let html = '';
+                data.results.forEach(sensor => {
+                    const statusClass = sensor.status === 'active' ? 'active' : sensor.status === 'error' ? 'error' : 'inactive';
+                    const lastValue = sensor.last_reading_value ? sensor.last_reading_value.toFixed(2) : 'N/A';
+                    
+                    html += `
+                        <div class="card sensor-card">
+                            <div class="card-body" style="padding: 15px;">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-2">
+                                            <span class="sensor-status ${statusClass}"></span>
+                                            ${sensor.sensor_id} - ${sensor.name}
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-map-marker-alt"></i> ${sensor.location}<br>
+                                            <i class="fas fa-flask"></i> ${sensor.sensor_type_name}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <div class="mb-2">
+                                            <h5>${lastValue}</h5>
+                                            <small class="text-muted">Последнее показание</small>
+                                        </div>
+                                        <button class="btn btn-sm btn-warning" onclick="generateReading(${sensor.id})">
+                                            <i class="fas fa-refresh"></i> Обновить
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('sensors-container').innerHTML = html || '<p class="text-center">Нет датчиков</p>';
+            } catch (error) {
+                console.error('Error loading sensors:', error);
+                document.getElementById('sensors-container').innerHTML = '<p class="text-danger">Ошибка загрузки</p>';
+            }
+        }
+
+        // Загрузить последние тревоги
+        async function loadAlerts() {
+            try {
+                const response = await fetch(`${API_BASE}/alerts/active_alerts/?limit=20`);
+                const data = await response.json();
+
+                let html = '';
+                if (data.length === 0) {
+                    html = '<p class="text-center text-muted">Нет активных тревог 🎉</p>';
+                } else {
+                    data.forEach(alert => {
+                        const badge = `alert-badge ${alert.status}`;
+                        html += `
+                            <div class="mb-3 p-3" style="background: #f8f9fa; border-radius: 10px;">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">${alert.sensor_id}</h6>
+                                        <small class="text-muted">${alert.value.toFixed(2)} > ${alert.threshold.toFixed(2)}</small>
+                                    </div>
+                                    <span class="${badge}">${alert.status_display}</span>
+                                </div>
+                                <small class="text-muted d-block mt-2">${new Date(alert.created_at).toLocaleString('ru-RU')}</small>
+                                <div class="mt-2">
+                                    ${alert.status === 'new' ? `
+                                        <button class="btn btn-sm btn-success" onclick="acknowledgeAlert(${alert.id})">Принять</button>
+                                    ` : ''}
+                                    ${alert.status !== 'resolved' ? `
+                                        <button class="btn btn-sm btn-info" onclick="resolveAlert(${alert.id})">Разрешить</button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                document.getElementById('alerts-container').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+                document.getElementById('alerts-container').innerHTML = '<p class="text-danger">Ошибка загрузки</p>';
+            }
+        }
+
+        // Добавить датчик
+        async function showAddSensorModal() {
+            // Загрузить типы датчиков
+            try {
+                const response = await fetch(`${API_BASE}/sensor-types/`);
+                const types = await response.json();
+
+                let html = '<option value="">Выберите тип...</option>';
+                types.results.forEach(type => {
+                    html += `<option value="${type.id}">${type.name} (${type.unit})</option>`;
+                });
+                document.getElementById('sensorType').innerHTML = html;
+
+                const modal = new bootstrap.Modal(document.getElementById('addSensorModal'));
+                modal.show();
+            } catch (error) {
+                alert('Ошибка загрузки типов датчиков');
+            }
+        }
+
+        async function addSensor() {
+            const sensorData = {
+                sensor_id: document.getElementById('sensorId').value,
+                name: document.getElementById('sensorName').value,
+                sensor_type: document.getElementById('sensorType').value,
+                location: document.getElementById('sensorLocation').value,
+                threshold_critical: parseFloat(document.getElementById('sensorThreshold').value),
+                latitude: document.getElementById('sensorLatitude').value || null,
+                longitude: document.getElementById('sensorLongitude').value || null,
+                status: 'active',
+                is_active: true
+            };
+
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE}/sensors/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify(sensorData)
+                });
+
+                if (response.ok) {
+                    alert('✅ Датчик добавлен успешно!');
+                    bootstrap.Modal.getInstance(document.getElementById('addSensorModal')).hide();
+                    document.getElementById('addSensorForm').reset();
+                    loadData();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Ошибка: ' + JSON.stringify(error));
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Генерировать показание
+        async function generateReading(sensorId) {
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE}/sensors/${sensorId}/simulate_reading/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                if (response.ok) {
+                    loadData();
+                } else {
+                    alert('Ошибка при генерации показания');
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Генерировать все показания
+        async function generateBulkReadings() {
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE}/sensors/generate_bulk_readings/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({})
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(`✅ Сгенерировано показаний: ${data.readings_created.length}`);
+                    loadData();
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Принять тревогу
+        async function acknowledgeAlert(alertId) {
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE}/alerts/${alertId}/acknowledge/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                if (response.ok) {
+                    loadAlerts();
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Разрешить тревогу
+        async function resolveAlert(alertId) {
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE}/alerts/${alertId}/resolve/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+
+                if (response.ok) {
+                    loadAlerts();
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Показать modal имитации
+        function showSimulationModal() {
+            const modal = new bootstrap.Modal(document.getElementById('simulationModal'));
+            modal.show();
+        }
+
+        // Утилиты
+        function showLoading() {
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('loading-spinner').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('overlay').classList.remove('active');
+            document.getElementById('loading-spinner').classList.remove('active');
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>
